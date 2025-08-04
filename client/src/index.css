@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html, body, #root {
+  height: 100%; /* Ensure html, body, and the root div take full height */
+  margin: 0; /* Remove default body margin */
+  padding: 0; /* Remove default body padding */
+  overflow-x: hidden; /* Prevent horizontal scrollbar from overflow */
+}
+
+body {
+  /* Apply black background and white text using direct CSS properties */
+  background-color: #121212; /* Exact hex for black */
+  color: #ffffff;             /* Exact hex for white */
+  font-family: 'Inter', sans-serif; /* Ensure Inter font is applied globally */
+}

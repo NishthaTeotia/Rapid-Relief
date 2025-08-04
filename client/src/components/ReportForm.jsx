@@ -1,23 +1,22 @@
-// client/src/components/ReportForm.jsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createReport } from '../api/reportsApi';
-import { geocodeAddress, getAutocompleteSuggestions } from '../utils/geocode'; // <-- Import both functions
+import { geocodeAddress, getAutocompleteSuggestions } from '../utils/geocode';
 
-const ReportForm = ({ onReportSubmitted }) => {
+const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop received here
     const [formData, setFormData] = useState({
         type: 'Fire',
         description: '',
-        address: '', 
+        address: '',
         imageUrl: '',
+        severity: 'Medium', // Added severity field
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(false);
-    const [suggestions, setSuggestions] = useState([]); // State for autocomplete suggestions
-    const [selectedAddressCoords, setSelectedAddressCoords] = useState(null); // To store lat/lon if selected from dropdown
-    const debounceTimeoutRef = useRef(null); // For debouncing autocomplete input
+    // const [success, setSuccess] = useState(false); // Removed, handled by parent now
+    const [suggestions, setSuggestions] = useState([]);
+    const [selectedAddressCoords, setSelectedAddressCoords] = useState(null);
+    const debounceTimeoutRef = useRef(null);
 
-    // Debounce the autocomplete search to avoid too many API calls
     const debouncedGetSuggestions = useCallback((query) => {
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
@@ -29,13 +28,13 @@ const ReportForm = ({ onReportSubmitted }) => {
             } else {
                 setSuggestions([]);
             }
-        }, 300); // Wait 300ms after last keystroke
+        }, 300);
     }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        setSelectedAddressCoords(null); // Clear selected coordinates if address input changes
+        setSelectedAddressCoords(null);
 
         if (name === 'address') {
             debouncedGetSuggestions(value);
@@ -49,14 +48,14 @@ const ReportForm = ({ onReportSubmitted }) => {
             longitude: suggestion.longitude,
             address: suggestion.formattedAddress
         });
-        setSuggestions([]); // Clear suggestions after selection
+        setSuggestions([]);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
-        setSuccess(false);
+        // setSuccess(false); // Removed
 
         let finalLocation = selectedAddressCoords;
 
@@ -67,7 +66,6 @@ const ReportForm = ({ onReportSubmitted }) => {
                 return;
             }
 
-            // If an address was NOT selected from autocomplete, perform a full geocode
             if (!finalLocation) {
                 const geoResult = await geocodeAddress(formData.address);
 
@@ -82,24 +80,29 @@ const ReportForm = ({ onReportSubmitted }) => {
             const reportData = {
                 type: formData.type,
                 description: formData.description,
-                location: finalLocation, 
-                imageUrl: formData.imageUrl,
+                location: finalLocation,
+                images: formData.imageUrl ? [formData.imageUrl] : [], // Ensure images is an array
+                severity: formData.severity, // Include severity
             };
 
-            await createReport(reportData);
-            setSuccess(true);
+            const response = await createReport(reportData); // Capture response to get message
+            // setSuccess(true); // Removed, parent handles success message
+            
+            // Call the parent's callback function with a success message
+            if (onReportSubmitted) {
+                onReportSubmitted(response.message || 'Report submitted successfully!');
+            }
+
+            // Reset form fields after successful submission
             setFormData({
                 type: 'Fire',
                 description: '',
-                address: '', 
+                address: '',
                 imageUrl: '',
+                severity: 'Medium',
             });
-            setSelectedAddressCoords(null); // Reset
-            setSuggestions([]); // Reset
-            
-            if (onReportSubmitted) {
-                onReportSubmitted();
-            }
+            setSelectedAddressCoords(null);
+            setSuggestions([]);
 
         } catch (err) {
             setError('Failed to submit report. ' + (err.message || err.response?.data?.message || 'Please try again.'));
@@ -111,9 +114,9 @@ const ReportForm = ({ onReportSubmitted }) => {
 
     return (
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-xl border-t-4 border-primary">
-            <h2 className="text-2xl font-bold text-dark mb-6">Submit a New Disaster Report</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Submit a New Disaster Report</h2>
             
-            {success && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">Report submitted successfully!</div>}
+            {/* Removed local success message display, parent handles it */}
             {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -135,16 +138,19 @@ const ReportForm = ({ onReportSubmitted }) => {
                 </div>
 
                 <div>
-                    <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
-                    <input
-                        type="url"
-                        id="imageUrl"
-                        name="imageUrl"
-                        value={formData.imageUrl}
+                    <label htmlFor="severity" className="block text-sm font-medium text-gray-700">Severity</label>
+                    <select
+                        id="severity"
+                        name="severity"
+                        value={formData.severity}
                         onChange={handleChange}
-                        placeholder="Link to image of the incident"
                         className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-                    />
+                    >
+                        <option>Low</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                        <option>Critical</option>
+                    </select>
                 </div>
             </div>
 
@@ -163,7 +169,7 @@ const ReportForm = ({ onReportSubmitted }) => {
             </div>
 
             {/* Address Input with Autocomplete */}
-            <div className="mt-6 relative"> {/* Add relative for positioning suggestions */}
+            <div className="mt-6 relative">
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">Location Address</label>
                 <input
                     type="text"
@@ -174,7 +180,7 @@ const ReportForm = ({ onReportSubmitted }) => {
                     required
                     placeholder="e.g., Connaught Place, New Delhi"
                     className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
-                    autoComplete="off" // Prevent browser's autocomplete
+                    autoComplete="off"
                 />
                 {suggestions.length > 0 && (
                     <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
@@ -189,6 +195,19 @@ const ReportForm = ({ onReportSubmitted }) => {
                         ))}
                     </ul>
                 )}
+            </div>
+
+            <div className="mt-6">
+                <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
+                <input
+                    type="url"
+                    id="imageUrl"
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleChange}
+                    placeholder="Link to image of the incident"
+                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                />
             </div>
 
             <div className="mt-8">

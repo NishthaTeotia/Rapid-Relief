@@ -1,34 +1,36 @@
 // client/src/pages/ReportsPage.jsx
 import React, { useState, useEffect } from 'react';
-import ReportForm from '../components/ReportForm';
+// Removed useNavigate as it's no longer needed on this page
+// Removed ReportForm import as it's no longer on this page
 import ReportCard from '../components/ReportCard';
 import MapView from '../components/MapView';
-import { fetchReports } from '../api/reportsApi'; // Correct import
-import { io } from 'socket.io-client'; // Correct import
+import { getPublicReports } from '../api/reportsApi'; // This import is correct and necessary for display
+import { io } from 'socket.io-client';
 
 const ReportsPage = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    // Removed successMessage state as form submission is moved
+    // Removed navigate initialization as it's no longer needed on this page
 
     // Function to fetch reports from the API
     const loadReports = async () => {
         try {
-            const response = await fetchReports();
-            // --- FIX APPLIED HERE ---
-            // Ensure response.data is an array before setting state
-            if (Array.isArray(response.data)) {
-                setReports(response.data);
+            const response = await getPublicReports(); // This call is correct for fetching public reports
+            if (Array.isArray(response)) {
+                setReports(response);
+            } else if (response && Array.isArray(response.reports)) {
+                setReports(response.reports);
             } else {
-                console.error("API response for reports was not an array:", response.data);
+                console.error("API response for reports was not an array or expected object:", response);
                 setError("Received invalid data format for reports.");
-                setReports([]); // Fallback to empty array
+                setReports([]);
             }
-            // --- END FIX ---
             setLoading(false);
         } catch (err) {
-            console.error("Error loading reports:", err); // More detailed error logging
-            setError('Failed to fetch reports. Please check backend connection.');
+            console.error("Error loading reports:", err);
+            setError('Failed to fetch reports. Please check backend connection and ensure the /api/reports/public route is correctly implemented and accessible.');
             setLoading(false);
         }
     };
@@ -37,8 +39,7 @@ const ReportsPage = () => {
     useEffect(() => {
         loadReports();
 
-        // Connect to WebSocket server
-        const socket = io(import.meta.env.VITE_BACKEND_URL);
+        const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
 
         socket.on('connect', () => {
             console.log('Connected to WebSocket server for real-time updates');
@@ -47,20 +48,31 @@ const ReportsPage = () => {
         // Listen for new reports broadcasted by the backend
         socket.on('newReport', (newReport) => {
             console.log('Received new report via Socket.IO:', newReport);
-            // Ensure newReport is a single object before adding
-            if (newReport && typeof newReport === 'object' && !Array.isArray(newReport)) {
+            // Only add if it matches public criteria (e.g., status is 'Pending', 'Received', 'Assigned', 'In Progress')
+            if (newReport && typeof newReport === 'object' && !Array.isArray(newReport) &&
+                ['Pending', 'Received', 'Assigned', 'In Progress'].includes(newReport.status)) {
                 setReports(prevReports => [newReport, ...prevReports]);
             } else {
-                console.warn("Received invalid newReport object via Socket.IO:", newReport);
+                console.warn("Received invalid or non-public newReport object via Socket.IO:", newReport);
             }
         });
 
         // Listen for updated reports
         socket.on('reportUpdated', (updatedReport) => {
             console.log('Received updated report via Socket.IO:', updatedReport);
-            setReports(prevReports => prevReports.map(report =>
-                report._id === updatedReport._id ? updatedReport : report
-            ));
+            setReports(prevReports => {
+                if (!['Pending', 'Received', 'Assigned', 'In Progress'].includes(updatedReport.status)) {
+                    return prevReports.filter(report => report._id !== updatedReport._id);
+                }
+                const exists = prevReports.some(report => report._id === updatedReport._id);
+                if (exists) {
+                    return prevReports.map(report =>
+                        report._id === updatedReport._id ? updatedReport : report
+                    );
+                } else {
+                    return [updatedReport, ...prevReports];
+                }
+            });
         });
 
         // Listen for deleted reports
@@ -69,23 +81,16 @@ const ReportsPage = () => {
             setReports(prevReports => prevReports.filter(report => report._id !== deletedReportId));
         });
 
-
         socket.on('disconnect', () => {
             console.log('Disconnected from WebSocket server');
         });
 
-        // Clean up socket connection on unmount
         return () => {
             socket.disconnect();
         };
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
-    // Handle report submission success (re-fetches data or relies on Socket.IO)
-    const handleReportSubmitted = () => {
-        // Socket.IO should handle the update for new submissions
-        // If Socket.IO fails, a full reload might be desired as fallback: loadReports();
-        console.log('Report submitted. Awaiting real-time update via Socket.IO.');
-    };
+    // Removed handleReportSubmitted as form submission is moved to SubmitReportPage.jsx
 
     if (loading) {
         return <div className="text-center py-10 text-gray-600">Loading reports...</div>;
@@ -96,23 +101,27 @@ const ReportsPage = () => {
     }
 
     return (
-        <div className="min-h-screen p-6">
-            <h1 className="text-4xl font-extrabold text-dark mb-8">Disaster Reports & Live Map</h1>
+        <div className="min-h-screen p-6 bg-gray-100">
+            <h1 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Disaster Reports & Live Map</h1>
+
+            {/* Removed successMessage display as form submission is moved */}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-                {/* Map View Section */}
+                {/* Map View Section - Now takes full width on large screens */}
                 <div className="lg:col-span-2">
-                    <section className="mb-10">
+                    <section className="mb-10 bg-white p-6 rounded-lg shadow-md">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">Live Incident Map</h2>
-                        <MapView reports={reports} /> {/* Pass the reports array */}
+                        <div className="h-[400px] w-full rounded-lg overflow-hidden">
+                            <MapView reports={reports} />
+                        </div>
                     </section>
+                </div>
 
-                    {/* Reports List Section */}
-                    <section>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Latest Reports</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* --- FIX APPLIED HERE --- */}
+                {/* Reports List Section - Now takes 1/3 width on large screens */}
+                <div className="lg:col-span-1">
+                    <section className="bg-white p-6 rounded-lg shadow-md">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Latest Public Reports</h2>
+                        <div className="grid grid-cols-1 gap-8"> {/* Changed to single column for better fit */}
                             {Array.isArray(reports) && reports.length > 0 ? (
                                 reports.map(report => (
                                     <ReportCard key={report._id} report={report} />
@@ -120,15 +129,7 @@ const ReportsPage = () => {
                             ) : (
                                 <p className="text-gray-500 italic">No disaster reports available yet.</p>
                             )}
-                            {/* --- END FIX --- */}
                         </div>
-                    </section>
-                </div>
-
-                {/* Submit Report Section */}
-                <div>
-                    <section>
-                        <ReportForm onReportSubmitted={handleReportSubmitted} />
                     </section>
                 </div>
             </div>
@@ -137,3 +138,8 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
+
+
+
+
+

@@ -1,70 +1,144 @@
-// client/src/api/reportsApi.js
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-// Function to fetch all reports
-export const fetchReports = async () => {
-    try {
-        const response = await axios.get(`${API_URL}/api/reports`);
-        return response; // response.data will be the array directly
-    } catch (error) {
-        console.error('Error fetching reports:', error.response?.data || error.message);
-        throw error;
+// Helper to get auth token from localStorage
+const getToken = () => localStorage.getItem('token');
+
+// Create an Axios instance with base URL and default headers
+const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Add a request interceptor to include the Authorization token
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const token = getToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-};
+);
 
-// Function to fetch a single report by ID
-export const fetchReportById = async (id) => {
+// --- API Functions for Reports ---
+
+// @desc    Get all reports (Admin only)
+export const getAllReports = async () => {
     try {
-        const response = await axios.get(`${API_URL}/api/reports/${id}`);
+        const response = await axiosInstance.get('/api/reports');
         return response.data;
     } catch (error) {
-        console.error(`Error fetching report ${id}:`, error.response?.data || error.message);
-        throw error;
+        console.error('Error fetching all reports (Admin access):', error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to fetch all reports';
     }
 };
 
-// Function to create a new report
+// @desc    Get public reports (for public display on ReportsPage)
+// @route   GET /api/reports/public
+// @access  Public (no authentication required)
+export const getPublicReports = async () => {
+    try {
+        const response = await axiosInstance.get('/api/reports/public');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching public reports:', error.response?.data?.message || error.message);
+        throw error.response?.data?.message || 'Failed to fetch public reports.';
+    }
+};
+
+
+// @desc    Get reports relevant to the authenticated user (submitted by or assigned to)
+// @route   GET /api/reports/my
+export const getMyReports = async () => {
+    try {
+        const response = await axiosInstance.get('/api/reports/my');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching my reports:', error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to fetch my reports';
+    }
+};
+
+// @desc    Get a single report by ID (Admin or reporter or assigned user)
+export const getReportById = async (reportId) => {
+    try {
+        const response = await axiosInstance.get(`/api/reports/${reportId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching report ${reportId}:`, error.response?.data || error.message);
+        throw error.response?.data?.message || `Failed to fetch report ${reportId}`;
+    }
+};
+
+// @desc    Create a new report (Any logged-in user)
 export const createReport = async (reportData) => {
     try {
-        const response = await axios.post(`${API_URL}/api/reports`, reportData);
+        const response = await axiosInstance.post('/api/reports', reportData);
         return response.data;
     } catch (error) {
         console.error('Error creating report:', error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || 'Failed to create report';
     }
 };
 
-// Function to update an existing report (e.g., status, details)
-export const updateReport = async (id, updatedData) => {
+// @desc    Update an existing report (General update, can be used by admin, reporter, or assigned user)
+export const updateReport = async (reportId, updatedData) => {
     try {
-        const response = await axios.put(`${API_URL}/api/reports/${id}`, updatedData);
+        const response = await axiosInstance.put(`/api/reports/${reportId}`, updatedData);
         return response.data;
     } catch (error) {
-        console.error(`Error updating report ${id}:`, error.response?.data || error.message);
-        throw error;
+        console.error(`Error updating report ${reportId}:`, error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to update report';
     }
 };
 
-// Function to add a comment to a report
-export const addReportComment = async (reportId, commentText) => {
+// @desc    Update a report's status (Admin or assigned user)
+export const updateReportStatus = async (reportId, newStatus) => {
     try {
-        const response = await axios.post(`${API_URL}/api/reports/${reportId}/comments`, { text: commentText });
-        return response.data; // Should return the new comment or updated report
-    } catch (error) {
-        console.error(`Error adding comment to report ${reportId}:`, error.response?.data || error.message);
-        throw error;
-    }
-};
-
-// Function to delete a report
-export const deleteReport = async (id) => {
-    try {
-        const response = await axios.delete(`${API_URL}/api/reports/${id}`);
+        const response = await axiosInstance.put(`/api/reports/status/${reportId}`, { status: newStatus });
         return response.data;
     } catch (error) {
-        console.error(`Error deleting report ${id}:`, error.response?.data || error.message);
-        throw error;
+        console.error(`Error updating report ${reportId} status to ${newStatus}:`, error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to update report status';
+    }
+};
+
+// @desc    Assign a report to a user (Admin only)
+export const assignReport = async (reportId, assignedToId) => {
+    try {
+        const response = await axiosInstance.put(`/api/reports/assign/${reportId}`, { assignedToId });
+        return response.data;
+    } catch (error) {
+        console.error(`Error assigning report ${reportId} to ${assignedToId}:`, error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to assign report';
+    }
+};
+
+// @desc    Add/Update admin notes for a report (Admin only)
+export const addAdminNotes = async (reportId, adminNotes) => {
+    try {
+        const response = await axiosInstance.put(`/api/reports/notes/${reportId}`, { adminNotes });
+        return response.data;
+    } catch (error) {
+        console.error(`Error adding admin notes to report ${reportId}:`, error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to add admin notes';
+    }
+};
+
+// @desc    Delete a report (Admin only)
+export const deleteReport = async (reportId) => {
+    try {
+        const response = await axiosInstance.delete(`/api/reports/${reportId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error deleting report ${reportId}:`, error.response?.data || error.message);
+        throw error.response?.data?.message || 'Failed to delete report';
     }
 };

@@ -1,211 +1,200 @@
-// client/src/pages/AdminDashboardPage.jsx
-import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
-import ReportCard from '../components/ReportCard';
-import HelpRequestCard from '../components/HelpRequestCard';
-import VolunteerCard from '../components/VolunteerCard';
-import { fetchReports, updateReport } from '../api/reportsApi'; // Import updateReport
-import { fetchHelpRequests, updateHelpRequestStatus, deleteHelpRequest } from '../api/helpRequestsApi';
-import { fetchVolunteers, deleteVolunteer } from '../api/volunteersApi';
-import { io } from 'socket.io-client'; // Import socket.io
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getAllUsers } from "../api/userApi";
+import { getAllReports } from "../api/reportsApi";
+import { getAllHelpRequests } from "../api/helpRequestsApi";
+import MapComponent from "../components/MapView";
+import { useAuth } from "../context/AuthContext"; 
 
 const AdminDashboardPage = () => {
-    const [reports, setReports] = useState([]);
-    const [helpRequests, setHelpRequests] = useState([]);
-    const [volunteers, setVolunteers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [helpRequests, setHelpRequests] = useState([]);
 
-    const loadAllData = useCallback(async () => { // Wrapped in useCallback
-        setLoading(true);
-        setError(null);
-        try {
-            const [reportsRes, helpRes, volRes] = await Promise.all([
-                fetchReports(),
-                fetchHelpRequests(),
-                fetchVolunteers()
-            ]);
-
-            // Ensure data is array before setting state
-            setReports(Array.isArray(reportsRes.data) ? reportsRes.data : []);
-            setHelpRequests(Array.isArray(helpRes.data) ? helpRes.data : []);
-            setVolunteers(Array.isArray(volRes.data) ? volRes.data : []);
-
-            setLoading(false);
-        } catch (err) {
-            setError('Failed to load dashboard data. Please check backend connection.');
-            setLoading(false);
-            console.error(err);
-        }
-    }, []); // Empty dependency array
-
-    useEffect(() => {
-        loadAllData();
-
-        const socket = io(import.meta.env.VITE_BACKEND_URL);
-
-        // Socket.IO listeners for real-time updates
-        socket.on('newReport', (newReport) => {
-            console.log('Admin: New report via Socket.IO:', newReport);
-            setReports(prev => [newReport, ...prev]);
-        });
-        socket.on('reportUpdated', (updatedReport) => {
-            console.log('Admin: Report updated via Socket.IO:', updatedReport);
-            setReports(prev => prev.map(r => r._id === updatedReport._id ? updatedReport : r));
-        });
-        socket.on('reportDeleted', (deletedReportId) => {
-            console.log('Admin: Report deleted via Socket.IO:', deletedReportId);
-            setReports(prev => prev.filter(r => r._id !== deletedReportId));
-        });
-
-        socket.on('newHelpRequest', (newRequest) => {
-            console.log('Admin: New help request via Socket.IO:', newRequest);
-            setHelpRequests(prev => [newRequest, ...prev]);
-        });
-        socket.on('helpRequestUpdated', (updatedRequest) => {
-            console.log('Admin: Help request updated via Socket.IO:', updatedRequest);
-            setHelpRequests(prev => prev.map(hr => hr._id === updatedRequest._id ? updatedRequest : hr));
-        });
-        socket.on('helpRequestDeleted', (deletedRequestId) => {
-            console.log('Admin: Help request deleted via Socket.IO:', deletedRequestId);
-            setHelpRequests(prev => prev.filter(hr => hr._id !== deletedRequestId));
-        });
-
-        // Add similar listeners for volunteers if you implement real-time updates for them
-        // socket.on('newVolunteer', (newVolunteer) => { ... });
-        // socket.on('volunteerDeleted', (deletedVolunteerId) => { ... });
-
-
-        socket.on('connect_error', (err) => {
-            console.error('Socket.IO connection error on Admin Dashboard:', err.message);
-        });
-
-        return () => {
-            socket.disconnect();
-        };
-    }, [loadAllData]); // Depend on loadAllData
-
-
-    const handleReportStatusChange = async (id, newStatus) => {
-        try {
-            // Assuming the status field is part of the report document
-            await updateReport(id, { status: newStatus });
-            // Socket.IO will handle updating the state, so no need to loadAllData() immediately
-            console.log(`Report ${id} status updated to ${newStatus}. Waiting for Socket.IO update.`);
-        } catch (err) {
-            setError('Failed to update report status.');
-            console.error(err);
-        }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const usersData = await getAllUsers();
+        const reportsData = await getAllReports();
+        const helpRequestsData = await getAllHelpRequests();
+        setUsers(usersData);
+        setReports(reportsData);
+        setHelpRequests(helpRequestsData);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      }
     };
 
-    const handleHelpRequestStatusChange = async (id, newStatus) => {
-        try {
-            await updateHelpRequestStatus(id, newStatus);
-            // Socket.IO will handle updating the state
-            console.log(`Help request ${id} status updated to ${newStatus}. Waiting for Socket.IO update.`);
-        } catch (err) {
-            setError('Failed to update help request status.');
-            console.error(err);
-        }
-    };
+    fetchData();
+  }, []);
 
-    const handleDeleteHelpRequest = async (id) => {
-        if (window.confirm('Are you sure you want to delete this help request?')) {
-            try {
-                await deleteHelpRequest(id);
-                // Socket.IO will handle updating the state
-                console.log(`Help request ${id} deleted. Waiting for Socket.IO update.`);
-            } catch (err) {
-                setError('Failed to delete help request.');
-                console.error(err);
-            }
-        }
-    };
+  const handleLogout = async () => {
+    await logout(); // <-- Call logout from AuthContext
+    navigate("/logout-confirm"); // <-- Redirect after logout
+  };
 
-    const handleDeleteVolunteer = async (id) => {
-        if (window.confirm('Are you sure you want to remove this volunteer?')) {
-            try {
-                await deleteVolunteer(id);
-                // No Socket.IO for volunteers deletion yet, so manual reload
-                loadAllData();
-            } catch (err) {
-                setError('Failed to delete volunteer.');
-                console.error(err);
-            }
-        }
-    };
 
-    if (loading) {
-        return <div className="text-center py-10 text-gray-600">Loading admin dashboard...</div>;
-    }
+  const containerStyle = {
+    minHeight: "100vh",
+    backgroundColor: "#121212",
+    color: "#ffffff",
+    padding: "20px",
+    fontFamily: "Inter, sans-serif",
+  };
 
-    if (error) {
-        return <div className="text-center py-10 text-red-600">Error: {error}</div>;
-    }
+  const headerStyle = {
+    textAlign: "center",
+    fontSize: "2rem",
+    fontWeight: "bold",
+    marginBottom: "24px",
+  };
 
-    return (
-        <div className="min-h-screen p-6">
-            <h1 className="text-4xl font-extrabold text-dark mb-8">Admin Dashboard</h1>
-            <p className="text-red-600 font-semibold mb-6">WARNING: This page is for demonstration purposes. In a real application, it must be secured with proper authentication and authorization!</p>
+  const summaryRowStyle = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "20px",
+    justifyContent: "center",
+    marginBottom: "30px",
+  };
 
-            {/* Reports Management */}
-            <section className="mb-10 bg-white p-6 rounded-lg shadow-lg border-t-4 border-primary">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Manage Disaster Reports</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {reports.length > 0 ? (
-                        reports.map(report => (
-                            <ReportCard
-                                key={report._id}
-                                report={report}
-                                isAdmin={true}
-                                onStatusChange={handleReportStatusChange}
-                            />
-                        ))
-                    ) : (
-                        <p className="text-gray-500 italic col-span-full">No disaster reports to manage.</p>
-                    )}
-                </div>
-            </section>
+  const navRowStyle = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "20px",
+    justifyContent: "center",
+    marginBottom: "30px",
+  };
 
-            {/* Help Requests Management */}
-            <section className="mb-10 bg-white p-6 rounded-lg shadow-lg border-t-4 border-secondary">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Manage Help Requests</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {helpRequests.length > 0 ? (
-                        helpRequests.map(request => (
-                            <HelpRequestCard
-                                key={request._id}
-                                request={request}
-                                isAdmin={true}
-                                onStatusChange={handleHelpRequestStatusChange}
-                                onDelete={handleDeleteHelpRequest}
-                            />
-                        ))
-                    ) : (
-                        <p className="text-gray-500 italic col-span-full">No help requests to manage.</p>
-                    )}
-                </div>
-            </section>
+  const summaryCardStyle = {
+    backgroundColor: "#1f1f1f",
+    padding: "20px",
+    borderRadius: "16px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+    width: "250px",
+    textAlign: "center",
+    transition: "background 0.3s",
+  };
 
-            {/* Volunteers Management */}
-            <section className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Manage Volunteers</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {volunteers.length > 0 ? (
-                        volunteers.map(volunteer => (
-                            <VolunteerCard
-                                key={volunteer._id}
-                                volunteer={volunteer}
-                                isAdmin={true}
-                                onDelete={handleDeleteVolunteer}
-                            />
-                        ))
-                    ) : (
-                        <p className="text-gray-500 italic col-span-full">No volunteers to manage.</p>
-                    )}
-                </div>
-            </section>
+  const navCardStyle = {
+    backgroundColor: "#1f1f1f",
+    padding: "40px",
+    borderRadius: "16px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+    width: "calc(30% - 20px)",
+    textAlign: "center",
+    cursor: "pointer",
+    transition: "background 0.3s",
+  };
+
+  const mapContainerStyle = {
+    backgroundColor: "#1f1f1f",
+    padding: "20px",
+    borderRadius: "16px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+  };
+
+  const hoverHandlers = {
+    onMouseOver: (e) => (e.currentTarget.style.backgroundColor = "#2b2b2b"),
+    onMouseOut: (e) => (e.currentTarget.style.backgroundColor = "#1f1f1f"),
+  };
+
+  
+  const logoutButtonStyle = {
+    position: "absolute",
+    top: "20px",
+    right: "20px",
+    backgroundColor: "#e53935",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: "8px",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+    transition: "background 0.3s",
+  };
+  return (
+
+    <div style={containerStyle}>
+         <button
+        style={logoutButtonStyle}
+        onClick={handleLogout}
+        onMouseOver={(e) => (e.target.style.backgroundColor = "#d32f2f")}
+        onMouseOut={(e) => (e.target.style.backgroundColor = "#e53935")}
+      >
+        Logout
+      </button>
+      <h1 style={headerStyle}>Admin Dashboard</h1>
+
+      {/* Summary Cards */}
+      <div style={summaryRowStyle}>
+        <div
+          style={summaryCardStyle}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "8px" }}>Total Users</h2>
+          <p style={{ fontSize: "2rem" }}>{users.length}</p>
         </div>
-    );
+        <div
+          style={summaryCardStyle}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "8px" }}>Total Reports</h2>
+          <p style={{ fontSize: "2rem" }}>{reports.length}</p>
+        </div>
+        <div
+          style={summaryCardStyle}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.2rem", marginBottom: "8px" }}>Resource Requests</h2>
+          <p style={{ fontSize: "2rem" }}>{helpRequests.length}</p>
+        </div>
+      </div>
+
+      {/* Navigation Cards */}
+      <div style={navRowStyle}>
+        <div
+          style={navCardStyle}
+          onClick={() => navigate("/admin/users")}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.5rem" }}>Users</h2>
+        </div>
+        <div
+          style={navCardStyle}
+          onClick={() => navigate("/admin/reports")}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.5rem" }}>Reports</h2>
+        </div>
+        <div
+          style={navCardStyle}
+          onClick={() => navigate("/admin/requests")}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.5rem" }}>Resource Requests</h2>
+        </div>
+        <div
+          style={navCardStyle}
+          onClick={() => navigate("/admin/assign-tasks")}
+          {...hoverHandlers}
+        >
+          <h2 style={{ fontSize: "1.5rem" }}>Assigned Tasks</h2>
+        </div>
+      </div>
+
+      {/* Map Section */}
+      <div style={mapContainerStyle}>
+        <h2 style={{ fontSize: "1.2rem", marginBottom: "12px" }}>
+          Reports & Resource Requests Map
+        </h2>
+        <div style={{ height: "500px", borderRadius: "12px", overflow: "hidden" }}>
+          <MapComponent reports={reports} helpRequests={helpRequests} />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AdminDashboardPage;

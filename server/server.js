@@ -1,4 +1,3 @@
-// server/server.js
 require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const mongoose = require('mongoose');
@@ -6,78 +5,74 @@ const http = require('http'); // Node.js built-in HTTP module
 const { Server } = require('socket.io'); // Socket.IO Server class
 const cors = require('cors');
 
-// Import controllers directly
-const reportsController = require('./src/controllers/reportsController');
-// const helpRequestsController = require('./src/controllers/helpRequestsController'); // This import might become redundant or change how you pass `io`
-const volunteersController = require('./src/controllers/volunteersController');
+// Import route modules
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const helpRequestsRouter = require('./routes/helpRequests'); // Correct import: directly imports the router
 
-// IMPORT THE ROUTER MODULE
-const helpRequestsRouter = require('./src/routes/helpRequests'); // Correct path for the router
+// Import error handling middleware
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 const server = http.createServer(app); // Create HTTP server from Express app
 
-// Socket.IO setup
+// Socket.IO setup (CORS config for Socket.IO is separate)
 const io = new Server(server, {
- cors: {
-origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
- methods: ["GET", "POST", "PUT", "DELETE"]
- }
+    cors: {
+        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        methods: ["GET", "POST", "PUT", "DELETE"],
+        credentials: true
+    }
 });
 
-// Export the Socket.IO instance so it can be used in other controller files (if needed, but usually passed)
-exports.io = io; // You can keep this for other controllers that might still use it directly
+// CRUCIAL: Attach Socket.IO instance to Express app for access in routes/controllers
+app.set('io', io); // Now accessible via req.app.get('io')
 
 // Middleware
 app.use(cors({
- origin: process.env.CORS_ORIGIN || 'http://localhost:5173'
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true
 }));
-app.use(express.json());
+app.use(express.json()); // For parsing application/json
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
- .then(() => console.log('MongoDB connected successfully'))
- .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected successfully'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-// Define API routes directly using controllers
-// Reports Routes
-app.get('/api/reports', reportsController.getReports);
-app.get('/api/reports/:id', reportsController.getReportById);
-app.post('/api/reports', (req, res) => reportsController.createReport(req, res, io));
-app.put('/api/reports/:id', (req, res) => reportsController.updateReport(req, res, io));
-app.post('/api/reports/:id/comments', (req, res) => reportsController.addComment(req, res, io));
-app.delete('/api/reports/:id', (req, res) => reportsController.deleteReport(req, res, io));
+// Define API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/reports', reportRoutes);
 
-// Help Requests Routes - Use the dedicated router here!
-// Pass the `io` instance to the router factory function
-app.use('/api/help-requests', helpRequestsRouter(io)); // <--- THIS IS THE FIX for help requests
-
-// Volunteers Routes
-app.get('/api/volunteers', volunteersController.getVolunteers);
-app.post('/api/volunteers', volunteersController.registerVolunteer);
-app.put('/api/volunteers/:id', volunteersController.updateVolunteer);
-app.delete('/api/volunteers/:id', volunteersController.deleteVolunteer);
+// --- FIX: Use helpRequestsRouter directly, as it no longer accepts 'io' as an argument ---
+app.use('/api/help-requests', helpRequestsRouter);
 
 // Basic route for testing server status
 app.get('/', (req, res) => {
- res.send('Rapid Relief API is running!');
+    res.send('Rapid Relief API is running!');
 });
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
- console.log(`Socket.IO: User connected: ${socket.id}`);
+    console.log(`Socket.IO: User connected: ${socket.id}`);
 
- socket.on('disconnect', () => {
-console.log(`Socket.IO: User disconnected: ${socket.id}`);
- });
+    socket.on('disconnect', () => {
+        console.log(`Socket.IO: User disconnected: ${socket.id}`);
+    });
 
- socket.on('connect_error', (err) => {
- console.error('Socket.IO connection error:', err.message);
- });
+    socket.on('connect_error', (err) => {
+        console.error('Socket.IO connection error:', err.message);
+    });
 });
+
+// Error handling middleware (MUST be after routes)
+app.use(notFound); // Handles 404 Not Found errors
+app.use(errorHandler); // Handles all other errors and formats responses
 
 // Start the server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
- console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
