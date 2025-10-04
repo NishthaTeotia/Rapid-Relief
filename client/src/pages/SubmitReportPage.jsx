@@ -78,7 +78,7 @@ const SubmitReportPage = () => {
                     width: 100%;
                     padding: 0.75rem;
                     border-radius: 0.5rem;
-                    border: 1px solid #C53030; /* Red border from the image */
+                    /* Red border from the image */
                     background-color: #2A2A2A; /* Match card background */
                     color: #fff;
                     outline: none;
@@ -105,7 +105,7 @@ const SubmitReportPage = () => {
                  button[type="submit"] {
                     width: 100%;
                     padding: 1rem;
-                    background-color: #C53030; /* Red button */
+                    background-color: #0a58ca; /* Red button */
                     color: #fff;
                     font-weight: bold;
                     font-size: 1rem;

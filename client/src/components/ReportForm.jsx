@@ -2,17 +2,17 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createReport } from '../api/reportsApi';
 import { geocodeAddress, getAutocompleteSuggestions } from '../utils/geocode';
 
-const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop received here
+// ReportForm component now accepts style props from its parent
+const ReportForm = ({ onReportSubmitted, inputStyle, textareaStyle, labelStyle, submitButtonStyle }) => {
     const [formData, setFormData] = useState({
         type: 'Fire',
         description: '',
         address: '',
         imageUrl: '',
-        severity: 'Medium', // Added severity field
+        severity: 'Medium',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    // const [success, setSuccess] = useState(false); // Removed, handled by parent now
     const [suggestions, setSuggestions] = useState([]);
     const [selectedAddressCoords, setSelectedAddressCoords] = useState(null);
     const debounceTimeoutRef = useRef(null);
@@ -55,7 +55,6 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
         e.preventDefault();
         setLoading(true);
         setError(null);
-        // setSuccess(false); // Removed
 
         let finalLocation = selectedAddressCoords;
 
@@ -81,19 +80,16 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
                 type: formData.type,
                 description: formData.description,
                 location: finalLocation,
-                images: formData.imageUrl ? [formData.imageUrl] : [], // Ensure images is an array
-                severity: formData.severity, // Include severity
+                images: formData.imageUrl ? [formData.imageUrl] : [],
+                severity: formData.severity,
             };
 
-            const response = await createReport(reportData); // Capture response to get message
-            // setSuccess(true); // Removed, parent handles success message
-            
-            // Call the parent's callback function with a success message
+            const response = await createReport(reportData);
+
             if (onReportSubmitted) {
                 onReportSubmitted(response.message || 'Report submitted successfully!');
             }
 
-            // Reset form fields after successful submission
             setFormData({
                 type: 'Fire',
                 description: '',
@@ -112,50 +108,109 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
         }
     };
 
-    return (
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-xl border-t-4 border-primary">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Submit a New Disaster Report</h2>
-            
-            {/* Removed local success message display, parent handles it */}
-            {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
+    // Define hover styles for buttons and list items
+    const submitButtonHoverStyle = {
+        backgroundColor: '#0a58ca', // Darker blue on hover
+    };
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    const suggestionItemHoverStyle = {
+        backgroundColor: '#333', // Darker background on hover for suggestions
+    };
+
+    return (
+        <form
+            onSubmit={handleSubmit}
+            style={{
+                backgroundColor: 'transparent', // Parent handles the card background
+                padding: '0', // Parent handles the card padding
+                borderRadius: '0.5rem',
+                boxShadow: 'none',
+                borderTop: 'none',
+            }}
+        >
+            <h2
+                style={{
+                    fontSize: '1.5rem',
+                    fontWeight: '700',
+                    color: '#fff',
+                    marginBottom: '1rem',
+                }}
+            >
+                Submit a New Disaster Report
+            </h2>
+
+            {error && (
+                <div
+                    style={{
+                        backgroundColor: '#dc3545', // Darker red for error background
+                        color: '#fff',
+                        padding: '0.75rem',
+                        borderRadius: '0.25rem',
+                        marginBottom: '1rem',
+                        textAlign: 'center',
+                    }}
+                >
+                    {error}
+                </div>
+            )}
+
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr', // Default for small screens
+                    gap: '1.5rem',
+                    marginBottom: '1.5rem', // Added for spacing
+                }}
+            >
+                {/* Responsive grid for larger screens */}
+                <style>
+                    {`
+                    @media (min-width: 768px) { /* md breakpoint */
+                        form > div:nth-child(2) { /* Targeting the grid container */
+                            grid-template-columns: 1fr 1fr;
+                        }
+                    }
+                    `}
+                </style>
+
                 <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">Disaster Type</label>
+                    <label htmlFor="type" style={labelStyle}>Disaster Type</label>
                     <select
                         id="type"
                         name="type"
                         value={formData.type}
                         onChange={handleChange}
-                        className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                        required
+                        style={inputStyle}
                     >
-                        <option>Fire</option>
-                        <option>Flood</option>
-                        <option>Earthquake</option>
-                        <option>Medical Emergency</option>
-                        <option>Other</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Earthquake">Earthquake</option>
+                        <option value="Medical Emergency">Medical Emergency</option>
+                        <option value="Other">Other</option>
                     </select>
                 </div>
 
                 <div>
-                    <label htmlFor="severity" className="block text-sm font-medium text-gray-700">Severity</label>
+                    <label htmlFor="severity" style={labelStyle}>Severity</label>
                     <select
                         id="severity"
                         name="severity"
                         value={formData.severity}
                         onChange={handleChange}
-                        className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                        required
+                        style={inputStyle}
                     >
-                        <option>Low</option>
-                        <option>Medium</option>
-                        <option>High</option>
-                        <option>Critical</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
                     </select>
                 </div>
             </div>
 
-            <div className="mt-6">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+            <div style={{ marginBottom: '1.5rem' }}> {/* Adjusted margin-top to match other fields */}
+                <label htmlFor="description" style={labelStyle}>Description</label>
                 <textarea
                     id="description"
                     name="description"
@@ -163,14 +218,14 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
                     value={formData.description}
                     onChange={handleChange}
                     required
-                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                    style={textareaStyle}
                     placeholder="Describe the incident and severity."
                 ></textarea>
             </div>
 
             {/* Address Input with Autocomplete */}
-            <div className="mt-6 relative">
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700">Location Address</label>
+            <div style={{ marginBottom: '1.5rem', position: 'relative' }}> {/* Adjusted margin-top */}
+                <label htmlFor="address" style={labelStyle}>Location Address</label>
                 <input
                     type="text"
                     id="address"
@@ -179,15 +234,39 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
                     onChange={handleChange}
                     required
                     placeholder="e.g., Connaught Place, New Delhi"
-                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                     autoComplete="off"
+                    style={inputStyle}
                 />
                 {suggestions.length > 0 && (
-                    <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+                    <ul
+                        style={{
+                            position: 'absolute',
+                            zIndex: 10,
+                            width: '100%',
+                           // Dark theme background
+                            border: '1px solid #444',
+                            borderRadius: '0.5rem',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            marginTop: '0.25rem',
+                            maxHeight: '15rem', // max-h-60
+                            overflowY: 'auto',
+                            listStyle: 'none', // Remove bullet points
+                            padding: '0', // Remove default padding
+                            color: '#fff', // Ensure text is visible
+                        }}
+                    >
                         {suggestions.map((s) => (
-                            <li 
-                                key={s.placeId} 
-                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                            <li
+                                key={s.placeId}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    color: '#fff', // Ensure text is visible
+                                    transition: 'background-color 0.2s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = suggestionItemHoverStyle.backgroundColor}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                                 onClick={() => handleSuggestionClick(s)}
                             >
                                 {s.formattedAddress}
@@ -197,8 +276,8 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
                 )}
             </div>
 
-            <div className="mt-6">
-                <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
+            <div style={{ marginBottom: '1.5rem' }}> {/* Adjusted margin-top */}
+                <label htmlFor="imageUrl" style={labelStyle}>Image URL (Optional)</label>
                 <input
                     type="url"
                     id="imageUrl"
@@ -206,15 +285,17 @@ const ReportForm = ({ onReportSubmitted }) => { // onReportSubmitted prop receiv
                     value={formData.imageUrl}
                     onChange={handleChange}
                     placeholder="Link to image of the incident"
-                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                    style={inputStyle}
                 />
             </div>
 
-            <div className="mt-8">
+            <div style={{ marginTop: '2rem' }}> {/* Adjusted margin-top for button */}
                 <button
                     type="submit"
-                    className="w-full bg-primary text-white py-3 px-6 rounded-md font-semibold hover:bg-red-600 transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
                     disabled={loading}
+                    style={loading ? { ...submitButtonStyle, opacity: 0.7 } : submitButtonStyle}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = submitButtonHoverStyle.backgroundColor}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = submitButtonStyle.backgroundColor}
                 >
                     {loading ? 'Submitting...' : 'Submit Report'}
                 </button>

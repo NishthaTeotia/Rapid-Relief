@@ -1,16 +1,16 @@
 import React from 'react';
 import { Link, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Home as HomeIcon, Users as UsersIcon, FileText as FileTextIcon, LogOut as LogOutIcon, HelpCircle as HelpIcon, FilePlus as FilePlusIcon, ClipboardList as ClipboardListIcon } from 'lucide-react';
+import { Home as HomeIcon, Users as UsersIcon, FileText as FileTextIcon, LogOut as LogOutIcon, HelpCircle as HelpIcon, ClipboardList as ClipboardListIcon } from 'lucide-react';
 
 // A reusable component for the side navigation
 const AdminSidebar = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
+    // Modified handleLogout to redirect to the logout confirmation page
     const handleLogout = () => {
-        logout();
-        navigate('/'); // Redirect to admin login page after admin logout
+        navigate('/logout-confirm'); // Redirect to the logout confirmation page
     };
 
     const navLinks = [
@@ -25,7 +25,7 @@ const AdminSidebar = () => {
         aside: {
             display: 'flex',
             flexDirection: 'column',
-             height: '100%',
+            height: '100%',
             width: '16rem',
             backgroundColor: '#222222',
             color: '#f9fafb',
@@ -64,7 +64,7 @@ const AdminSidebar = () => {
             color: '#d1d5db'
         },
         navLinkHover: {
-            backgroundColor: '#333333;',
+            backgroundColor: '#333333',
             color: '#ffffff'
         },
         navLinkActive: {
@@ -121,8 +121,6 @@ const AdminSidebar = () => {
         },
         mainLayout: {
             display: 'flex',
-           
-            
         },
         mainContent: {
             flex: 1,
@@ -182,7 +180,7 @@ const AdminSidebar = () => {
                         </span>
                         <span style={styles.role}>{user.role}</span>
                         <button
-                            onClick={handleLogout}
+                            onClick={handleLogout} // This now redirects to /logout-confirm
                             style={styles.logoutButton}
                             onMouseEnter={e => e.currentTarget.style.backgroundColor = styles.logoutButtonHover.backgroundColor}
                             onMouseLeave={e => e.currentTarget.style.backgroundColor = styles.logoutButton.backgroundColor}
@@ -198,7 +196,5 @@ const AdminSidebar = () => {
         </aside>
     );
 };
-
-
 
 export default AdminSidebar;

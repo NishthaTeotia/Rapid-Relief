@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { getAllReports, updateReportStatus, assignReport, addAdminNotes as addReportAdminNotes } from '../api/reportsApi';
 import { getAllHelpRequests, updateHelpRequestStatus, assignHelpRequest, addHelpRequestAdminNotes } from '../api/helpRequestsApi';
 import { getAllUsers } from '../api/userApi';
-
+import { deleteReport } from '../api/reportsApi';
+import { deleteHelpRequest } from '../api/helpRequestsApi';
 import io from 'socket.io-client';
 
 const AdminAssignTasksPage = () => {
@@ -13,9 +14,8 @@ const AdminAssignTasksPage = () => {
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [filterStatus, setFilterStatus] = useState('All'); // Filter tasks by status
-    const [filterType, setFilterType] = useState('All');     // Filter tasks by type (Report/Resource)
+    const [filterType, setFilterType] = useState('All');    // Filter tasks by type (Report/Resource)
     const [filterAssignee, setFilterAssignee] = useState('All'); // Filter tasks by assigned user
-
     const [availableAssignees, setAvailableAssignees] = useState([]);
 
     // State for Task Details Modal
@@ -320,7 +320,7 @@ const AdminAssignTasksPage = () => {
 
     return (
         <div className="container mt-5">
-            <h2 className="mb-4 text-center">Admin Dashboard - Assigned Tasks Overview</h2>
+            <h2 className="mb-4 text-center" style={{ color: '#F0F0F0' }}>Admin Dashboard - Assigned Tasks Overview</h2>
 
             {successMessage && (
                 <div className="alert alert-success text-center" role="alert">
@@ -329,7 +329,7 @@ const AdminAssignTasksPage = () => {
             )}
 
             <div className="mb-4 d-flex justify-content-between align-items-center">
-                <div className="d-flex gap-3">
+                <div className="d-flex gap-3 flex-wrap">
                     {/* Filter by Status */}
                     <div className="form-group">
                         <label htmlFor="filterStatus" className="form-label visually-hidden">Filter by Status</label>
@@ -338,7 +338,9 @@ const AdminAssignTasksPage = () => {
                             className="form-select"
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
+                            style={{ backgroundColor: '#212529', color: '#F0F0F0', borderColor: '#495057' }}
                         >
+                            <option value="All">All Statuses</option>
                             {allPossibleStatuses.map(status => (
                                 <option key={status} value={status}>{status}</option>
                             ))}
@@ -353,6 +355,7 @@ const AdminAssignTasksPage = () => {
                             className="form-select"
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
+                            style={{ backgroundColor: '#212529', color: '#F0F0F0', borderColor: '#495057' }}
                         >
                             <option value="All">All Types</option>
                             <option value="Report">Emergency Report</option>
@@ -368,6 +371,7 @@ const AdminAssignTasksPage = () => {
                             className="form-select"
                             value={filterAssignee}
                             onChange={(e) => setFilterAssignee(e.target.value)}
+                            style={{ backgroundColor: '#212529', color: '#F0F0F0', borderColor: '#495057' }}
                         >
                             <option value="All">All Assignees</option>
                             {availableAssignees.map(assignee => (
@@ -379,15 +383,15 @@ const AdminAssignTasksPage = () => {
             </div>
 
             {filteredTasks.length === 0 && !loading && !error ? (
-                <div className="alert alert-info text-center">No assigned tasks found matching the current filters.</div>
+                <div className="alert alert-info text-center" style={{ backgroundColor: '#1C1C1C', color: '#F0F0F0', border: '1px solid #495057' }}>No assigned tasks found matching the current filters.</div>
             ) : (
                 <div className="table-responsive">
-                    <table className="table table-striped table-hover table-bordered">
-                        <thead className="table-dark">
+                    <table className="table table-striped table-hover table-bordered" style={{ color: '#F0F0F0', border: '1px solid #495057' }}>
+                        <thead className="table-dark" style={{ backgroundColor: '#1C1C1C' }}>
                             <tr>
                                 <th>ID</th>
                                 <th>Type</th>
-                                <th>Category</th> {/* Report type or Resource type */}
+                                <th>Category</th>
                                 <th>Status</th>
                                 <th>Assigned To</th>
                                 <th>Requester/Reporter</th>
@@ -398,7 +402,7 @@ const AdminAssignTasksPage = () => {
                         </thead>
                         <tbody>
                             {filteredTasks.map((task) => (
-                                <tr key={task._id}>
+                                <tr key={task._id} style={{ backgroundColor: '#212529' }}>
                                     <td>{task._id.substring(0, 8)}...</td>
                                     <td>
                                         <span className={`badge ${
@@ -407,7 +411,7 @@ const AdminAssignTasksPage = () => {
                                             {task.taskType}
                                         </span>
                                     </td>
-                                    <td>{task.type}</td> {/* This is the specific type (e.g., Flood, Food) */}
+                                    <td>{task.type}</td>
                                     <td>
                                         <span className={`badge ${
                                             task.status === 'Pending' || task.status === 'Received' ? 'bg-secondary' :
@@ -441,7 +445,7 @@ const AdminAssignTasksPage = () => {
                                             >
                                                 Status
                                             </button>
-                                            <ul className="dropdown-menu" aria-labelledby={`dropdownStatus${task._id}`}>
+                                            <ul className="dropdown-menu" aria-labelledby={`dropdownStatus${task._id}`} style={{ backgroundColor: '#1C1C1C', border: '1px solid #495057' }}>
                                                 {/* Status options vary by task type */}
                                                 {task.taskType === 'Report' ? (
                                                     ['Pending', 'Received', 'Assigned', 'In Progress', 'Resolved', 'Closed', 'Rejected'].map(statusOption => (
@@ -453,6 +457,7 @@ const AdminAssignTasksPage = () => {
                                                                     e.preventDefault();
                                                                     handleChangeStatus(task._id, task.taskType, task.status, statusOption);
                                                                 }}
+                                                                style={{ color: '#F0F0F0' }}
                                                             >
                                                                 {statusOption}
                                                             </a>
@@ -468,6 +473,7 @@ const AdminAssignTasksPage = () => {
                                                                     e.preventDefault();
                                                                     handleChangeStatus(task._id, task.taskType, task.status, statusOption);
                                                                 }}
+                                                                style={{ color: '#F0F0F0' }}
                                                             >
                                                                 {statusOption}
                                                             </a>
@@ -487,15 +493,16 @@ const AdminAssignTasksPage = () => {
                                             >
                                                 Assign
                                             </button>
-                                            <ul className="dropdown-menu" aria-labelledby={`dropdownAssign${task._id}`}>
+                                            <ul className="dropdown-menu" aria-labelledby={`dropdownAssign${task._id}`} style={{ backgroundColor: '#1C1C1C', border: '1px solid #495057' }}>
                                                 {availableAssignees.length === 0 ? (
-                                                    <li><span className="dropdown-item-text text-muted">No Volunteers/NGOs available</span></li>
+                                                    <li><span className="dropdown-item-text" style={{ color: '#888' }}>No Volunteers/NGOs available</span></li>
                                                 ) : (
                                                     <>
                                                         {task.assignedTo && (
                                                             <li>
                                                                 <a
-                                                                    className="dropdown-item text-danger"
+                                                                    className="dropdown-item"
+                                                                    style={{ color: '#DC3545' }}
                                                                     href="#"
                                                                     onClick={(e) => {
                                                                         e.preventDefault();
@@ -515,6 +522,7 @@ const AdminAssignTasksPage = () => {
                                                                         e.preventDefault();
                                                                         handleAssignTask(task._id, task.taskType, assignee._id, assignee.username);
                                                                     }}
+                                                                    style={{ color: '#F0F0F0' }}
                                                                 >
                                                                     {assignee.username} ({assignee.role})
                                                                 </a>
@@ -548,28 +556,28 @@ const AdminAssignTasksPage = () => {
             {isDetailModalOpen && selectedTask && (
                 <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} aria-modal="true" role="dialog">
                     <div className="modal-dialog modal-dialog-centered modal-lg">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">{selectedTask.taskType} Details: {selectedTask._id.substring(0, 8)}...</h5>
-                                <button type="button" className="btn-close" onClick={handleCloseDetailModal} aria-label="Close"></button>
+                        <div className="modal-content" style={{ backgroundColor: '#1C1C1C', color: '#F0F0F0', border: '1px solid #495057' }}>
+                            <div className="modal-header" style={{ borderBottom: '1px solid #495057' }}>
+                                <h5 className="modal-title" style={{ color: '#F0F0F0' }}>{selectedTask.taskType} Details: {selectedTask._id.substring(0, 8)}...</h5>
+                                <button type="button" className="btn-close" onClick={handleCloseDetailModal} aria-label="Close" style={{ filter: 'invert(1)' }}></button>
                             </div>
-                            <div className="modal-body">
+                            <div className="modal-body" style={{ color: '#F0F0F0' }}>
                                 <p><strong>Type:</strong> {selectedTask.type}</p>
                                 <p><strong>Status:</strong> <span className={`badge ${
-                                            selectedTask.status === 'Pending' || selectedTask.status === 'Received' ? 'bg-secondary' :
-                                            selectedTask.status === 'Assigned' ? 'bg-primary' :
-                                            selectedTask.status === 'In Progress' ? 'bg-warning text-dark' :
-                                            selectedTask.status === 'Resolved' || selectedTask.status === 'Fulfilled' ? 'bg-success' :
-                                            selectedTask.status === 'Closed' || selectedTask.status === 'Cancelled' || selectedTask.status === 'Rejected' ? 'bg-dark' :
-                                            'bg-danger'
-                                        }`}>{selectedTask.status}</span></p>
+                                    selectedTask.status === 'Pending' || selectedTask.status === 'Received' ? 'bg-secondary' :
+                                    selectedTask.status === 'Assigned' ? 'bg-primary' :
+                                    selectedTask.status === 'In Progress' ? 'bg-warning text-dark' :
+                                    selectedTask.status === 'Resolved' || selectedTask.status === 'Fulfilled' ? 'bg-success' :
+                                    selectedTask.status === 'Closed' || selectedTask.status === 'Cancelled' || selectedTask.status === 'Rejected' ? 'bg-dark' :
+                                    'bg-danger'
+                                }`}>{selectedTask.status}</span></p>
                                 <p><strong>Description:</strong> {selectedTask.description}</p>
                                 {selectedTask.severity && <p><strong>Severity:</strong> <span className={`badge ${
-                                            selectedTask.severity === 'Critical' ? 'bg-danger' :
-                                            selectedTask.severity === 'High' ? 'bg-warning text-dark' :
-                                            selectedTask.severity === 'Medium' ? 'bg-info text-dark' :
-                                            'bg-secondary'
-                                        }`}>{selectedTask.severity}</span></p>}
+                                    selectedTask.severity === 'Critical' ? 'bg-danger' :
+                                    selectedTask.severity === 'High' ? 'bg-warning text-dark' :
+                                    selectedTask.severity === 'Medium' ? 'bg-info text-dark' :
+                                    'bg-secondary'
+                                }`}>{selectedTask.severity}</span></p>}
                                 {selectedTask.quantity && <p><strong>Quantity:</strong> {selectedTask.quantity} {selectedTask.unit}</p>}
                                 <p><strong>Location:</strong> {selectedTask.location.address || `Lat: ${selectedTask.location.latitude}, Lng: ${selectedTask.location.longitude}`}</p>
                                 <p><strong>Requested By:</strong> {selectedTask.requestedBy ? `${selectedTask.requestedBy.username} (${selectedTask.requestedBy.role})` : selectedTask.reporter ? `${selectedTask.reporter.username} (${selectedTask.reporter.role})` : 'N/A'}</p>
@@ -581,7 +589,7 @@ const AdminAssignTasksPage = () => {
                                         <strong>Images:</strong>
                                         <div className="d-flex flex-wrap mt-2">
                                             {selectedTask.images.map((img, index) => (
-                                                <img key={index} src={img} alt={`Task Image ${index + 1}`} className="img-thumbnail me-2 mb-2" style={{ maxWidth: '150px', maxHeight: '150px', objectFit: 'cover' }} />
+                                                <img key={index} src={img} alt={`Task Image ${index + 1}`} className="img-thumbnail me-2 mb-2" style={{ maxWidth: '150px', maxHeight: '150px', objectFit: 'cover', backgroundColor: '#212529', border: '1px solid #495057' }} />
                                             ))}
                                         </div>
                                     </div>
@@ -593,7 +601,7 @@ const AdminAssignTasksPage = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="modal-footer">
+                            <div className="modal-footer" style={{ borderTop: '1px solid #495057' }}>
                                 <button type="button" className="btn btn-secondary" onClick={handleCloseDetailModal}>Close</button>
                             </div>
                         </div>
@@ -605,12 +613,12 @@ const AdminAssignTasksPage = () => {
             {isNotesModalOpen && currentTaskForNotes && (
                 <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} aria-modal="true" role="dialog">
                     <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Admin Notes for {currentTaskForNotes.taskType}: {currentTaskForNotes._id.substring(0, 8)}...</h5>
-                                <button type="button" className="btn-close" onClick={handleCloseNotesModal} aria-label="Close"></button>
+                        <div className="modal-content" style={{ backgroundColor: '#1C1C1C', color: '#F0F0F0', border: '1px solid #495057' }}>
+                            <div className="modal-header" style={{ borderBottom: '1px solid #495057' }}>
+                                <h5 className="modal-title" style={{ color: '#F0F0F0' }}>Admin Notes for {currentTaskForNotes.taskType}: {currentTaskForNotes._id.substring(0, 8)}...</h5>
+                                <button type="button" className="btn-close" onClick={handleCloseNotesModal} aria-label="Close" style={{ filter: 'invert(1)' }}></button>
                             </div>
-                            <div className="modal-body">
+                            <div className="modal-body" style={{ color: '#F0F0F0' }}>
                                 <div className="mb-3">
                                     <label htmlFor="adminNotesTextarea" className="form-label">Notes:</label>
                                     <textarea
@@ -620,10 +628,11 @@ const AdminAssignTasksPage = () => {
                                         value={notesContent}
                                         onChange={(e) => setNotesContent(e.target.value)}
                                         placeholder="Add or edit admin notes here..."
+                                        style={{ backgroundColor: '#212529', color: '#F0F0F0', borderColor: '#495057' }}
                                     ></textarea>
                                 </div>
                             </div>
-                            <div className="modal-footer">
+                            <div className="modal-footer" style={{ borderTop: '1px solid #495057' }}>
                                 <button type="button" className="btn btn-secondary" onClick={handleCloseNotesModal}>Cancel</button>
                                 <button type="button" className="btn btn-primary" onClick={handleSaveAdminNotes} disabled={loading}>Save Notes</button>
                             </div>

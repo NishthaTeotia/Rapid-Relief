@@ -1,3 +1,4 @@
+// client/src/pages/AdminUserPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { getAllUsers, deleteUser, updateUser, approveUser, rejectUser } from '../api/userApi';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +28,8 @@ const AdminUserPage = () => {
     const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
     const [userToBlockUnblock, setUserToBlockUnblock] = useState(null);
     const [blockReasonInput, setBlockReasonInput] = useState('');
+
+    const isModalOpen = isEditModalOpen || isBlockModalOpen;
 
     const refreshUserLists = useCallback(async () => {
         if (authLoading) return;
@@ -200,81 +203,280 @@ const AdminUserPage = () => {
         }
     };
 
-    if (authLoading) {
-        return <div style={{ textAlign: 'center', marginTop: '20px' }}>Loading authentication status...</div>;
-    }
-
-    if (loading && !successMessage && !error && !isEditModalOpen && !isBlockModalOpen) {
-        return <div style={{ textAlign: 'center', marginTop: '20px' }}>Loading user data...</div>;
-    }
-
-    if (!user || user.role !== 'Admin') {
-        return (
-            <div style={{ padding: '20px', margin: '20px auto', maxWidth: '800px', backgroundColor: '#2c3034', color: '#f9fafb', borderRadius: '8px' }}>
-                <h3 style={{ textAlign: 'center' }}>Access Denied!</h3>
-                <p style={{ textAlign: 'center' }}>{error || "You must be logged in as an Administrator to view this page."}</p>
-            </div>
-        );
-    }
+    const styles = {
+        page: {
+            padding: '20px',
+            maxWidth: '1400px',
+            margin: '0 auto',
+            fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+            color: '#e0e0e0',
+            backgroundColor: '#1a1a1a',
+            minHeight: '100vh',
+            // No direct filter on this element. We will apply it conditionally to the main content.
+        },
+        mainContent: {
+            transition: 'filter 0.3s ease-in-out',
+        },
+        pageBlurred: {
+            filter: 'blur(5px)',
+            pointerEvents: 'none',
+            userSelect: 'none',
+        },
+        // This is the new, standalone overlay for the entire page
+        modalOverlay: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)', // A solid, semi-transparent layer
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999, // Lower than the modal but higher than the page content
+        },
+        header: {
+            textAlign: 'center',
+            marginBottom: '40px',
+            color: '#f0f0f0',
+            fontSize: '2.5rem',
+            fontWeight: '600',
+        },
+        sectionHeader: {
+            marginBottom: '20px',
+            fontSize: '1.8rem',
+            fontWeight: '500',
+            borderBottom: '2px solid #555',
+            paddingBottom: '10px',
+            color: '#00bfff',
+        },
+        listTitle: {
+            fontSize: '1.5rem',
+            fontWeight: '400',
+            marginBottom: '15px',
+            color: '#f0f0f0',
+        },
+        message: {
+            padding: '12px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            marginBottom: '20px',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+        },
+        success: {
+            backgroundColor: '#2e7d32',
+            color: '#e8f5e9',
+        },
+        error: {
+            backgroundColor: '#c62828',
+            color: '#ffebee',
+        },
+        deniedAccess: {
+            padding: '40px',
+            margin: '40px auto',
+            maxWidth: '800px',
+            backgroundColor: '#2c2c2c',
+            color: '#e57373',
+            borderRadius: '10px',
+            border: '1px solid #c62828',
+            textAlign: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        },
+        tableContainer: {
+            marginBottom: '40px',
+            backgroundColor: '#2c2c2c',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        },
+        table: {
+            width: '100%',
+            borderCollapse: 'separate',
+            borderSpacing: '0',
+        },
+        thead: {
+            backgroundColor: '#424242',
+            color: '#f0f0f0',
+        },
+        th: {
+            padding: '15px',
+            textAlign: 'left',
+            fontWeight: '600',
+            borderBottom: '2px solid #555',
+        },
+        td: {
+            padding: '15px',
+            borderBottom: '1px solid #333',
+            verticalAlign: 'middle',
+            color: '#e0e0e0',
+            fontSize: '0.95rem',
+        },
+        trEven: {
+            backgroundColor: '#2c2c2c',
+            '&:hover': {
+                backgroundColor: '#383838',
+            }
+        },
+        trOdd: {
+            backgroundColor: '#212121',
+            '&:hover': {
+                backgroundColor: '#383838',
+            }
+        },
+        buttonGroup: {
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+        },
+        button: {
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            minWidth: '90px',
+            transition: 'all 0.3s ease',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            fontSize: '0.85rem',
+        },
+        approveButton: {
+            backgroundColor: '#4caf50',
+            color: '#fff',
+            '&:hover': {
+                backgroundColor: '#66bb6a',
+            }
+        },
+        rejectButton: {
+            backgroundColor: '#f44336',
+            color: '#fff',
+            '&:hover': {
+                backgroundColor: '#ef5350',
+            }
+        },
+        editButton: {
+            backgroundColor: '#2196f3',
+            color: '#fff',
+            '&:hover': {
+                backgroundColor: '#42a5f5',
+            }
+        },
+        blockButton: {
+            backgroundColor: '#ffc107',
+            color: '#212121',
+            '&:hover': {
+                backgroundColor: '#ffca28',
+            }
+        },
+        unblockButton: {
+            backgroundColor: '#757575',
+            color: '#fff',
+            '&:hover': {
+                backgroundColor: '#9e9e9e',
+            }
+        },
+        deleteButton: {
+            backgroundColor: '#e53935',
+            color: '#fff',
+            '&:hover': {
+                backgroundColor: '#ef5350',
+            }
+        },
+        statusBadge: {
+            padding: '6px 12px',
+            borderRadius: '15px',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            display: 'inline-block',
+        },
+        activeBadge: {
+            backgroundColor: '#4caf50',
+        },
+        blockedBadge: {
+            backgroundColor: '#e53935',
+        },
+        reasonText: {
+            fontSize: '11px',
+            color: '#9e9e9e',
+            fontStyle: 'italic',
+            marginTop: '5px',
+            display: 'block',
+        },
+        infoText: {
+            color: '#9e9e9e',
+            fontSize: '12px',
+        },
+    };
 
     const renderUserTable = (title, userList, isPending = false) => (
-        <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ marginBottom: '15px', color: '#f9fafb' }}>{title} ({userList.length})</h3>
+        <div style={styles.tableContainer}>
+            <h3 style={styles.listTitle}>{title} ({userList.length})</h3>
             <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#1f2937', color: '#f9fafb', borderRadius: '8px', overflow: 'hidden' }}>
-                    <thead style={{ backgroundColor: '#111827' }}>
+                <table style={styles.table}>
+                    <thead style={styles.thead}>
                         <tr>
-                            <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>ID</th>
-                            <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>Username</th>
-                            <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>Role</th>
-                            <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>Created At</th>
-                            {isPending && <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>Status</th>}
-                            <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>Account Status</th>
-                            <th style={{ padding: '12px 15px', textAlign: 'left', borderBottom: '2px solid #374151' }}>Actions</th>
+                            <th style={styles.th}>ID</th>
+                            <th style={styles.th}>Username</th>
+                            <th style={styles.th}>Role</th>
+                            <th style={styles.th}>Created At</th>
+                            {isPending && <th style={styles.th}>Approval Status</th>}
+                            <th style={styles.th}>Account Status</th>
+                            <th style={styles.th}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {userList.length === 0 ? (
                             <tr>
-                                <td colSpan={isPending ? "7" : "6"} style={{ textAlign: 'center', color: '#6b7280', padding: '10px' }}>No {title.toLowerCase()} found.</td>
+                                <td colSpan={isPending ? "7" : "6"} style={{ ...styles.td, textAlign: 'center', color: '#9e9e9e' }}>No {title.toLowerCase()} found.</td>
                             </tr>
                         ) : (
                             userList.map((u, index) => (
-                                <tr key={u._id} style={{ borderBottom: index === userList.length - 1 ? 'none' : '1px solid #374151' }}>
-                                    <td style={{ padding: '10px 15px' }}>{u._id.substring(0, 8)}...</td>
-                                    <td style={{ padding: '10px 15px' }}>{u.username}</td>
-                                    <td style={{ padding: '10px 15px' }}>{u.role}</td>
-                                    <td style={{ padding: '10px 15px' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
-                                    {isPending && <td style={{ padding: '10px 15px' }}>Pending Approval</td>}
-                                    <td style={{ padding: '10px 15px' }}>
+                                <tr key={u._id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
+                                    <td style={styles.td}>{u._id.substring(0, 8)}...</td>
+                                    <td style={styles.td}>{u.username}</td>
+                                    <td style={styles.td}>{u.role}</td>
+                                    <td style={styles.td}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                                    {isPending && <td style={styles.td}>Pending</td>}
+                                    <td style={styles.td}>
                                         {u.isBlocked ? (
-                                            <span style={{ backgroundColor: '#dc2626', color: '#f9fafb', padding: '4px 8px', borderRadius: '4px' }}>Blocked</span>
+                                            <span style={{...styles.statusBadge, ...styles.blockedBadge}}>Blocked</span>
                                         ) : (
-                                            <span style={{ backgroundColor: '#16a34a', color: '#f9fafb', padding: '4px 8px', borderRadius: '4px' }}>Active</span>
+                                            <span style={{...styles.statusBadge, ...styles.activeBadge}}>Active</span>
                                         )}
                                         {u.isBlocked && u.blockReason && (
-                                            <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }} title={u.blockReason}>(Reason)</span>
+                                            <span style={styles.reasonText} title={u.blockReason}>Reason</span>
                                         )}
                                     </td>
-                                    <td style={{ padding: '10px 15px', whiteSpace: 'nowrap' }}>
-                                        {isPending ? (
-                                            <>
-                                                <button style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '8px' }} onClick={() => handleApprove(u._id, u.username)} disabled={loading}>Approve</button>
-                                                <button style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => handleReject(u._id, u.username)} disabled={loading}>Reject</button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {user && user._id !== u._id ? (
-                                                    <>
-                                                        <button style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '8px', marginBottom: '4px' }} onClick={() => handleEdit(u)} disabled={loading}>Edit</button>
-                                                        <button style={{ backgroundColor: u.isBlocked ? '#fbbf24' : '#6b7280', color: '#000', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '8px', marginBottom: '4px' }} onClick={() => handleOpenBlockModal(u)} disabled={loading}>{u.isBlocked ? 'Unblock' : 'Block'}</button>
-                                                        <button style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', marginBottom: '4px' }} onClick={() => handleDelete(u._id, u.username)} disabled={loading}>Delete</button>
-                                                    </>
-                                                ) : (
-                                                    <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>(You)</span>
-                                                )}
-                                            </>
-                                        )}
+                                    <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
+                                        <div style={styles.buttonGroup}>
+                                            {isPending ? (
+                                                <>
+                                                    <button style={{...styles.button, ...styles.approveButton}} onClick={() => handleApprove(u._id, u.username)} disabled={loading}>Approve</button>
+                                                    <button style={{...styles.button, ...styles.rejectButton}} onClick={() => handleReject(u._id, u.username)} disabled={loading}>Reject</button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {user && user._id !== u._id ? (
+                                                        <>
+                                                            <button style={{...styles.button, ...styles.editButton}} onClick={() => handleEdit(u)} disabled={loading}>Edit</button>
+                                                            <button
+                                                                style={{...styles.button, ...(u.isBlocked ? styles.unblockButton : styles.blockButton)}}
+                                                                onClick={() => handleOpenBlockModal(u)}
+                                                                disabled={loading}
+                                                            >
+                                                                {u.isBlocked ? 'Unblock' : 'Block'}
+                                                            </button>
+                                                            <button style={{...styles.button, ...styles.deleteButton}} onClick={() => handleDelete(u._id, u.username)} disabled={loading}>Delete</button>
+                                                        </>
+                                                    ) : (
+                                                        <span style={styles.infoText}>(You)</span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -286,43 +488,40 @@ const AdminUserPage = () => {
     );
 
     return (
-        <div style={{ padding: '1rem' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>User Management</h2>
+        <div style={styles.page}>
+            <div style={{...styles.mainContent, ...(isModalOpen && styles.pageBlurred)}}>
+                <h2 style={styles.header}>User Management</h2>
 
-            {successMessage && (
-                <div style={{ backgroundColor: '#15803d', color: '#f0fdf4', padding: '10px', borderRadius: '5px', textAlign: 'center', marginBottom: '15px' }}>
-                    {successMessage}
-                </div>
-            )}
-            {error && (
-                <div style={{ backgroundColor: '#b91c1c', color: '#fef2f2', padding: '10px', borderRadius: '5px', textAlign: 'center', marginBottom: '15px' }}>
-                    {error}
-                </div>
-            )}
+                {successMessage && <div style={{...styles.message, ...styles.success}}>{successMessage}</div>}
+                {error && <div style={{...styles.message, ...styles.error}}>{error}</div>}
 
-            {(pendingVolunteers.length > 0 || pendingNgos.length > 0) && (
-                <div style={{ marginBottom: '30px' }}>
-                    <h3 style={{ color: '#3b82f6', marginBottom: '15px' }}>Pending Registrations</h3>
-                    {renderUserTable("Pending Volunteers", pendingVolunteers, true)}
-                    {renderUserTable("Pending NGOs", pendingNgos, true)}
-                </div>
-            )}
+                {(pendingVolunteers.length > 0 || pendingNgos.length > 0) && (
+                    <div>
+                        <h3 style={styles.sectionHeader}>Pending Registrations</h3>
+                        {renderUserTable("Pending Volunteers", pendingVolunteers, true)}
+                        {renderUserTable("Pending NGOs", pendingNgos, true)}
+                    </div>
+                )}
 
-            {renderUserTable("Blocked Users", blockedUsers)}
-            {renderUserTable("Administrators", admins)}
-            {renderUserTable("Approved NGOs", ngos)}
-            {renderUserTable("Approved Volunteers", volunteers)}
-            {renderUserTable("Public Users", publicUsers)}
+                {renderUserTable("Blocked Users", blockedUsers)}
+                {renderUserTable("Administrators", admins)}
+                {renderUserTable("Approved NGOs", ngos)}
+                {renderUserTable("Approved Volunteers", volunteers)}
+                {renderUserTable("Public Users", publicUsers)}
 
-            {allUsers.length === 0 && !loading && !error && (
-                <div style={{ backgroundColor: '#60a5fa', color: '#e0e7ff', padding: '10px', borderRadius: '5px', textAlign: 'center' }}>No users registered in the system.</div>
-            )}
+                {allUsers.length === 0 && !loading && !error && (
+                    <div style={{...styles.message, backgroundColor: '#212121', color: '#9e9e9e'}}>No users registered in the system.</div>
+                )}
+            </div>
+
+            {isModalOpen && <div style={styles.modalOverlay} />}
 
             <EditUserModal
                 isOpen={isEditModalOpen}
                 onClose={handleCloseEditModal}
                 userToEdit={currentUserToEdit}
                 onSave={handleUpdateUser}
+                isDarkTheme={true}
             />
 
             <BlockUserModal
@@ -333,6 +532,7 @@ const AdminUserPage = () => {
                 setBlockReasonInput={setBlockReasonInput}
                 onSave={handleBlockUnblockUser}
                 loading={loading}
+                isDarkTheme={true}
             />
         </div>
     );

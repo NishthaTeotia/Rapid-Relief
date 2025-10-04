@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'; // ONLY ONE REACT IMPORT HERE
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getAllReports, updateReportStatus, deleteReport, assignReport, addAdminNotes } from '../api/reportsApi';
 import { getAllUsers } from '../api/userApi';
-
 import io from 'socket.io-client';
 
-const AdminReportsPage = () => { // Renamed component to AdminReportsPage
+const AdminReportsPage = () => {
     const { user, loading: authLoading } = useAuth();
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -48,7 +47,7 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
         if (authLoading || !user || user.role !== 'Admin') return;
         try {
             const usersData = await getAllUsers();
-            const assignees = usersData.filter(u => (u.role === 'Volunteer' || u.role === 'NGO') && u.isApproved && !u.isBlocked); // Only approved, non-blocked
+            const assignees = usersData.filter(u => (u.role === 'Volunteer' || u.role === 'NGO') && u.isApproved && !u.isBlocked);
             setAvailableAssignees(assignees);
         } catch (err) {
             console.error('Error fetching assignable users:', err);
@@ -202,70 +201,79 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
     };
 
     if (authLoading || loading) {
-        return <div className="container mt-5 text-center">Loading emergency reports...</div>;
+        return <div className="container mt-5 text-center" style={{ color: '#ffffff' }}>Loading emergency reports...</div>;
     }
 
     if (error) {
         return (
-            <div className="container mt-5 alert alert-danger text-center" role="alert">
-                <h3>Error!</h3>
-                <p>{error}</p>
+            <div className="container mt-5 alert alert-danger text-center" role="alert" style={{ backgroundColor: '#2d1a1a', borderColor: '#4e2a2a', color: '#ffcccc', borderRadius: '8px', padding: '16px' }}>
+                <h3 style={{ margin: '0 0 8px 0' }}>Error!</h3>
+                <p style={{ margin: '0' }}>{error}</p>
             </div>
         );
     }
 
     if (!user || user.role !== 'Admin') {
         return (
-            <div className="container mt-5 alert alert-warning text-center">
-                <h3>Access Denied!</h3>
-                <p>You must be logged in as an Administrator to view this page.</p>
+            <div className="container mt-5 alert alert-warning text-center" style={{ backgroundColor: '#2d2d1a', borderColor: '#4e4e2a', color: '#ffffcc', borderRadius: '8px', padding: '16px' }}>
+                <h3 style={{ margin: '0 0 8px 0' }}>Access Denied!</h3>
+                <p style={{ margin: '0' }}>You must be logged in as an Administrator to view this page.</p>
             </div>
         );
     }
 
     return (
-        <div className="container mt-5">
-            <h2 className="mb-4 text-center">Admin Dashboard - Emergency Reports Oversight</h2>
+        <div className="container mt-5" style={{ backgroundColor: '#121212', color: '#ffffff', minHeight: '100vh', padding: '20px', borderRadius: '10px' }}>
+            <h2 className="mb-4 text-center" style={{ color: '#ffffff', borderBottom: '2px solid #555', paddingBottom: '10px' }}>Admin Dashboard - Emergency Reports Oversight</h2>
 
             {successMessage && (
-                <div className="alert alert-success text-center" role="alert">
+                <div className="alert alert-success text-center" role="alert" style={{ backgroundColor: '#1a2d1a', borderColor: '#2a4e2a', color: '#ccffcc', borderRadius: '8px', padding: '12px', marginBottom: '20px' }}>
                     {successMessage}
                 </div>
             )}
             {reports.length === 0 && !loading && !error ? (
-                <div className="alert alert-info text-center">No emergency reports found.</div>
+                <div className="alert alert-info text-center" style={{ backgroundColor: '#1a2d2d', borderColor: '#2a4e4e', color: '#ccffff', borderRadius: '8px', padding: '12px' }}>No emergency reports found.</div>
             ) : (
                 <div className="table-responsive">
-                    <table className="table table-striped table-hover table-bordered">
-                        <thead className="table-dark">
+                    <table className="table table-striped table-hover table-bordered" style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '8px', overflow: 'hidden', color: '#ffffff', backgroundColor: '#1e1e1e' }}>
+                        <thead className="table-dark" style={{ backgroundColor: '#2a2a2a' }}>
                             <tr>
-                                <th>ID</th>
-                                <th>Type</th>
-                                <th>Severity</th>
-                                <th>Status</th>
-                                <th>Reporter</th>
-                                <th>Assigned To</th>
-                                <th>Location</th>
-                                <th>Reported At</th>
-                                <th>Actions</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>ID</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Type</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Severity</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Status</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Reporter</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Assigned To</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Location</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Reported At</th>
+                                <th style={{ padding: '12px', border: '1px solid #444' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {reports.map((report) => (
-                                <tr key={report._id}>
-                                    <td>{report._id.substring(0, 8)}...</td>
-                                    <td>{report.type}</td>
-                                    <td>
+                                <tr key={report._id} style={{ transition: 'background-color 0.3s ease', borderBottom: '1px solid #444' }}>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>{report._id.substring(0, 8)}...</td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>{report.type}</td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>
                                         <span className={`badge ${
                                             report.severity === 'Critical' ? 'bg-danger' :
                                             report.severity === 'High' ? 'bg-warning text-dark' :
                                             report.severity === 'Medium' ? 'bg-info text-dark' :
                                             'bg-secondary'
-                                        }`}>
+                                        }`} style={{
+                                            padding: '5px 10px',
+                                            borderRadius: '12px',
+                                            backgroundColor:
+                                                report.severity === 'Critical' ? '#dc3545' :
+                                                report.severity === 'High' ? '#ffc107' :
+                                                report.severity === 'Medium' ? '#0dcaf0' :
+                                                '#6c757d',
+                                            color: report.severity === 'High' || report.severity === 'Medium' ? '#212529' : '#ffffff'
+                                        }}>
                                             {report.severity}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>
                                         <span className={`badge ${
                                             report.status === 'Pending' ? 'bg-secondary' :
                                             report.status === 'Received' ? 'bg-primary' :
@@ -274,32 +282,47 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                             report.status === 'Resolved' ? 'bg-success' :
                                             report.status === 'Closed' ? 'bg-dark' :
                                             'bg-danger'
-                                        }`}>
+                                        }`} style={{
+                                            padding: '5px 10px',
+                                            borderRadius: '12px',
+                                            backgroundColor:
+                                                report.status === 'Pending' ? '#6c757d' :
+                                                report.status === 'Received' ? '#0d6efd' :
+                                                report.status === 'Assigned' ? '#0dcaf0' :
+                                                report.status === 'In Progress' ? '#ffc107' :
+                                                report.status === 'Resolved' ? '#198754' :
+                                                report.status === 'Closed' ? '#343a40' :
+                                                '#dc3545',
+                                            color: report.status === 'Assigned' || report.status === 'In Progress' ? '#212529' : '#ffffff'
+                                        }}>
                                             {report.status}
                                         </span>
                                     </td>
-                                    <td>{report.reporter ? `${report.reporter.username} (${report.reporter.role})` : 'N/A'}</td>
-                                    <td>{report.assignedTo ? `${report.assignedTo.username} (${report.assignedTo.role})` : 'Unassigned'}</td>
-                                    <td>{report.location.address || `Lat: ${report.location.latitude}, Lng: ${report.location.longitude}`}</td>
-                                    <td>{new Date(report.createdAt).toLocaleDateString()}</td>
-                                    <td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>{report.reporter ? `${report.reporter.username} (${report.reporter.role})` : 'N/A'}</td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>{report.assignedTo ? report.assignedTo.username : 'Unassigned'}</td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>{report.location.address || `Lat: ${report.location.latitude}, Lng: ${report.location.longitude}`}</td>
+                                    <td style={{ padding: '12px', border: '1px solid #444' }}>{new Date(report.createdAt).toLocaleDateString()}</td>
+                                    <td style={{ padding: '12px', border: '1px solid #444', whiteSpace: 'nowrap' }}>
                                         <button
                                             className="btn btn-sm btn-primary me-2 mb-1"
                                             onClick={() => handleViewDetails(report)}
+                                            style={{ backgroundColor: '#0d6efd', color: '#fff', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer', marginRight: '8px' }}
                                         >
                                             View
                                         </button>
-                                        <div className="dropdown d-inline-block me-2 mb-1">
+                                        {/* Status Dropdown */}
+                                        <div className="dropdown d-inline-block me-2 mb-1" style={{ position: 'relative' }}>
                                             <button
                                                 className="btn btn-sm btn-secondary dropdown-toggle"
                                                 type="button"
                                                 id={`dropdownStatus${report._id}`}
                                                 data-bs-toggle="dropdown"
                                                 aria-expanded="false"
+                                                style={{ backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                             >
                                                 Status
                                             </button>
-                                            <ul className="dropdown-menu" aria-labelledby={`dropdownStatus${report._id}`}>
+                                            <ul className="dropdown-menu" aria-labelledby={`dropdownStatus${report._id}`} style={{ position: 'absolute', top: '100%', left: '0', zIndex: '1000', float: 'left', minWidth: '10rem', padding: '0.5rem 0', margin: '0.125rem 0 0', fontSize: '1rem', color: '#ffffff', textAlign: 'left', listStyle: 'none', backgroundColor: '#333', backgroundClip: 'padding-box', border: '1px solid rgba(0,0,0,.15)', borderRadius: '0.25rem' }}>
                                                 {['Pending', 'Received', 'Assigned', 'In Progress', 'Resolved', 'Closed', 'Rejected'].map(statusOption => (
                                                     <li key={statusOption}>
                                                         <a
@@ -309,6 +332,7 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                                                 e.preventDefault();
                                                                 handleChangeStatus(report._id, report.status, statusOption);
                                                             }}
+                                                            style={{ display: 'block', width: '100%', padding: '0.25rem 1rem', clear: 'both', fontWeight: '400', color: report.status === statusOption ? '#fff' : '#ffffff', textAlign: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap', backgroundColor: report.status === statusOption ? '#0d6efd' : '#333', border: '0' }}
                                                         >
                                                             {statusOption}
                                                         </a>
@@ -316,7 +340,8 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                                 ))}
                                             </ul>
                                         </div>
-                                        <div className="dropdown d-inline-block me-2 mb-1">
+                                        {/* Assign Dropdown */}
+                                        <div className="dropdown d-inline-block me-2 mb-1" style={{ position: 'relative' }}>
                                             <button
                                                 className="btn btn-sm btn-info dropdown-toggle"
                                                 type="button"
@@ -324,28 +349,28 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                                 data-bs-toggle="dropdown"
                                                 aria-expanded="false"
                                                 disabled={availableAssignees.length === 0}
+                                                style={{ backgroundColor: '#0dcaf0', color: '#212529', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: availableAssignees.length === 0 ? '0.65' : '1' }}
                                             >
                                                 Assign
                                             </button>
-                                            <ul className="dropdown-menu" aria-labelledby={`dropdownAssign${report._id}`}>
+                                            <ul className="dropdown-menu" aria-labelledby={`dropdownAssign${report._id}`} style={{ position: 'absolute', top: '100%', left: '0', zIndex: '1000', float: 'left', minWidth: '10rem', padding: '0.5rem 0', margin: '0.125rem 0 0', fontSize: '1rem', color: '#ffffff', textAlign: 'left', listStyle: 'none', backgroundColor: '#333', backgroundClip: 'padding-box', border: '1px solid rgba(0,0,0,.15)', borderRadius: '0.25rem' }}>
                                                 {availableAssignees.length === 0 ? (
-                                                    <li><span className="dropdown-item-text text-muted">No Volunteers/NGOs available</span></li>
+                                                    <li><span className="dropdown-item-text text-muted" style={{ display: 'block', padding: '0.25rem 1rem', color: '#999' }}>No Volunteers/NGOs available</span></li>
                                                 ) : (
                                                     <>
-                                                        {report.assignedTo && (
-                                                            <li>
-                                                                <a
-                                                                    className="dropdown-item text-danger"
-                                                                    href="#"
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        handleAssignReport(report._id, null, 'Unassigned');
-                                                                    }}
-                                                                >
-                                                                    Unassign
-                                                                </a>
-                                                            </li>
-                                                        )}
+                                                        <li>
+                                                            <a
+                                                                className={`dropdown-item ${!report.assignedTo ? 'active' : ''}`}
+                                                                href="#"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    handleAssignReport(report._id, null, 'Unassigned');
+                                                                }}
+                                                                style={{ display: 'block', width: '100%', padding: '0.25rem 1rem', clear: 'both', fontWeight: '400', color: !report.assignedTo ? '#fff' : '#ffffff', textAlign: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap', backgroundColor: !report.assignedTo ? '#0d6efd' : '#333', border: '0' }}
+                                                            >
+                                                                Unassigned
+                                                            </a>
+                                                        </li>
                                                         {availableAssignees.map(assignee => (
                                                             <li key={assignee._id}>
                                                                 <a
@@ -355,6 +380,7 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                                                         e.preventDefault();
                                                                         handleAssignReport(report._id, assignee._id, assignee.username);
                                                                     }}
+                                                                    style={{ display: 'block', width: '100%', padding: '0.25rem 1rem', clear: 'both', fontWeight: '400', color: report.assignedTo && report.assignedTo._id === assignee._id ? '#fff' : '#ffffff', textAlign: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap', backgroundColor: report.assignedTo && report.assignedTo._id === assignee._id ? '#0dcaf0' : '#333', border: '0' }}
                                                                 >
                                                                     {assignee.username} ({assignee.role})
                                                                 </a>
@@ -367,12 +393,14 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                         <button
                                             className="btn btn-sm btn-secondary mb-1"
                                             onClick={() => handleOpenNotesModal(report)}
+                                            style={{ backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer', marginRight: '8px' }}
                                         >
                                             Add Notes
                                         </button>
                                         <button
                                             className="btn btn-sm btn-danger ms-2 mb-1"
                                             onClick={() => handleDeleteReport(report._id)}
+                                            style={{ backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer' }}
                                         >
                                             Delete
                                         </button>
@@ -384,51 +412,77 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                 </div>
             )}
 
+            {/* Modal Backdrop and Blur Effect */}
+            {(isDetailModalOpen || isNotesModalOpen) && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', zIndex: 1040 }}></div>
+            )}
+
             {/* Report Detail Modal */}
             {isDetailModalOpen && selectedReport && (
-                <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} aria-modal="true" role="dialog">
-                    <div className="modal-dialog modal-dialog-centered modal-lg">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Report Details: {selectedReport._id.substring(0, 8)}...</h5>
-                                <button type="button" className="btn-close" onClick={handleCloseDetailModal} aria-label="Close"></button>
+                <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1050 }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg" style={{ width: '90%', maxWidth: '800px' }}>
+                        <div className="modal-content" style={{ backgroundColor: '#2a2a2a', color: '#ffffff', borderRadius: '10px', border: '1px solid #444', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+                            <div className="modal-header" style={{ borderBottom: '1px solid #444', padding: '15px 20px' }}>
+                                <h5 className="modal-title" style={{ margin: '0' }}>Report Details: {selectedReport._id.substring(0, 8)}...</h5>
+                                <button type="button" className="btn-close" onClick={handleCloseDetailModal} aria-label="Close" style={{ filter: 'invert(1)', opacity: '0.8' }}></button>
                             </div>
-                            <div className="modal-body">
-                                <p><strong>Reporter:</strong> {selectedReport.reporter ? `${selectedReport.reporter.username} (${selectedReport.reporter.role})` : 'N/A'}</p>
-                                <p><strong>Type:</strong> {selectedReport.type}</p>
-                                <p><strong>Severity:</strong> <span className={`badge ${
-                                            selectedReport.severity === 'Critical' ? 'bg-danger' :
-                                            selectedReport.severity === 'High' ? 'bg-warning text-dark' :
-                                            selectedReport.severity === 'Medium' ? 'bg-info text-dark' :
-                                            'bg-secondary'
-                                        }`}>{selectedReport.severity}</span></p>
-                                <p><strong>Status:</strong> <span className={`badge ${
-                                            selectedReport.status === 'Pending' ? 'bg-secondary' :
-                                            selected.status === 'Received' ? 'bg-primary' :
-                                            selectedReport.status === 'Assigned' ? 'bg-info text-dark' :
-                                            selectedReport.status === 'In Progress' ? 'bg-warning text-dark' :
-                                            selectedReport.status === 'Resolved' ? 'bg-success' :
-                                            selectedReport.status === 'Closed' ? 'bg-dark' :
-                                            'bg-danger'
-                                        }`}>{selectedReport.status}</span></p>
-                                <p><strong>Description:</strong> {selectedReport.description}</p>
-                                <p><strong>Location:</strong> {selectedReport.location.address || `Lat: ${selectedReport.location.latitude}, Lng: ${selectedReport.location.longitude}`}</p>
-                                <p><strong>Assigned To:</strong> {selectedReport.assignedTo ? `${selectedReport.assignedTo.username} (${selectedReport.assignedTo.role})` : 'Unassigned'}</p>
-                                <p><strong>Admin Notes:</strong> {selectedReport.adminNotes || 'None'}</p>
-                                <p><strong>Reported At:</strong> {new Date(selectedReport.createdAt).toLocaleString()}</p>
+                            <div className="modal-body" style={{ padding: '20px' }}>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Reporter:</strong> {selectedReport.reporter ? `${selectedReport.reporter.username} (${selectedReport.reporter.role})` : 'N/A'}</p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Type:</strong> {selectedReport.type}</p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Severity:</strong> <span className={`badge ${
+                                    selectedReport.severity === 'Critical' ? 'bg-danger' :
+                                    selectedReport.severity === 'High' ? 'bg-warning text-dark' :
+                                    selectedReport.severity === 'Medium' ? 'bg-info text-dark' :
+                                    'bg-secondary'
+                                }`} style={{
+                                    padding: '5px 10px',
+                                    borderRadius: '12px',
+                                    backgroundColor:
+                                        selectedReport.severity === 'Critical' ? '#dc3545' :
+                                        selectedReport.severity === 'High' ? '#ffc107' :
+                                        selectedReport.severity === 'Medium' ? '#0dcaf0' :
+                                        '#6c757d',
+                                    color: selectedReport.severity === 'High' || selectedReport.severity === 'Medium' ? '#212529' : '#ffffff'
+                                }}>{selectedReport.severity}</span></p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Status:</strong> <span className={`badge ${
+                                    selectedReport.status === 'Pending' ? 'bg-secondary' :
+                                    selectedReport.status === 'Received' ? 'bg-primary' :
+                                    selectedReport.status === 'Assigned' ? 'bg-info text-dark' :
+                                    selectedReport.status === 'In Progress' ? 'bg-warning text-dark' :
+                                    selectedReport.status === 'Resolved' ? 'bg-success' :
+                                    selectedReport.status === 'Closed' ? 'bg-dark' :
+                                    'bg-danger'
+                                }`} style={{
+                                    padding: '5px 10px',
+                                    borderRadius: '12px',
+                                    backgroundColor:
+                                        selectedReport.status === 'Pending' ? '#6c757d' :
+                                        selectedReport.status === 'Received' ? '#0d6efd' :
+                                        selectedReport.status === 'Assigned' ? '#0dcaf0' :
+                                        selectedReport.status === 'In Progress' ? '#ffc107' :
+                                        selectedReport.status === 'Resolved' ? '#198754' :
+                                        selectedReport.status === 'Closed' ? '#343a40' :
+                                        '#dc3545',
+                                    color: selectedReport.status === 'Assigned' || selectedReport.status === 'In Progress' ? '#212529' : '#ffffff'
+                                }}>{selectedReport.status}</span></p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Description:</strong> {selectedReport.description}</p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Location:</strong> {selectedReport.location.address || `Lat: ${selectedReport.location.latitude}, Lng: ${selectedReport.location.longitude}`}</p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Assigned To:</strong> {selectedReport.assignedTo ? `${selectedReport.assignedTo.username} (${selectedReport.assignedTo.role})` : 'Unassigned'}</p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Admin Notes:</strong> {selectedReport.adminNotes || 'None'}</p>
+                                <p style={{ margin: '0 0 10px 0' }}><strong>Reported At:</strong> {new Date(selectedReport.createdAt).toLocaleString()}</p>
                                 {selectedReport.images && selectedReport.images.length > 0 && (
-                                    <div>
-                                        <strong>Images:</strong>
-                                        <div className="d-flex flex-wrap mt-2">
+                                    <div style={{ marginTop: '20px' }}>
+                                        <strong style={{ display: 'block', marginBottom: '10px' }}>Images:</strong>
+                                        <div className="d-flex flex-wrap mt-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                                             {selectedReport.images.map((img, index) => (
-                                                <img key={index} src={img} alt={`Report Image ${index + 1}`} className="img-thumbnail me-2 mb-2" style={{ maxWidth: '150px', maxHeight: '150px', objectFit: 'cover' }} />
+                                                <img key={index} src={img} alt={`Report Image ${index + 1}`} className="img-thumbnail me-2 mb-2" style={{ maxWidth: '150px', maxHeight: '150px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #444' }} />
                                             ))}
                                         </div>
                                     </div>
                                 )}
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={handleCloseDetailModal}>Close</button>
+                            <div className="modal-footer" style={{ borderTop: '1px solid #444', padding: '15px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-secondary" onClick={handleCloseDetailModal} style={{ backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer' }}>Close</button>
                             </div>
                         </div>
                     </div>
@@ -437,16 +491,16 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
 
             {/* Admin Notes Modal */}
             {isNotesModalOpen && currentReportForNotes && (
-                <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} aria-modal="true" role="dialog">
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Admin Notes for Report: {currentReportForNotes._id.substring(0, 8)}...</h5>
-                                <button type="button" className="btn-close" onClick={handleCloseNotesModal} aria-label="Close"></button>
+                <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1050 }}>
+                    <div className="modal-dialog modal-dialog-centered" style={{ width: '90%', maxWidth: '500px' }}>
+                        <div className="modal-content" style={{ backgroundColor: '#2a2a2a', color: '#ffffff', borderRadius: '10px', border: '1px solid #444', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+                            <div className="modal-header" style={{ borderBottom: '1px solid #444', padding: '15px 20px' }}>
+                                <h5 className="modal-title" style={{ margin: '0' }}>Admin Notes for Report: {currentReportForNotes._id.substring(0, 8)}...</h5>
+                                <button type="button" className="btn-close" onClick={handleCloseNotesModal} aria-label="Close" style={{ filter: 'invert(1)', opacity: '0.8' }}></button>
                             </div>
-                            <div className="modal-body">
-                                <div className="mb-3">
-                                    <label htmlFor="adminNotesTextarea" className="form-label">Notes:</label>
+                            <div className="modal-body" style={{ padding: '20px' }}>
+                                <div className="mb-3" style={{ marginBottom: '1rem' }}>
+                                    <label htmlFor="adminNotesTextarea" className="form-label" style={{ display: 'block', marginBottom: '0.5rem' }}>Notes:</label>
                                     <textarea
                                         className="form-control"
                                         id="adminNotesTextarea"
@@ -454,12 +508,13 @@ const AdminReportsPage = () => { // Renamed component to AdminReportsPage
                                         value={notesContent}
                                         onChange={(e) => setNotesContent(e.target.value)}
                                         placeholder="Add or edit admin notes here..."
+                                        style={{ width: '100%', padding: '10px', backgroundColor: '#333', border: '1px solid #555', color: '#ffffff', borderRadius: '5px' }}
                                     ></textarea>
                                 </div>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={handleCloseNotesModal}>Cancel</button>
-                                <button type="button" className="btn btn-primary" onClick={handleSaveAdminNotes} disabled={loading}>Save Notes</button>
+                            <div className="modal-footer" style={{ borderTop: '1px solid #444', padding: '15px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-secondary" onClick={handleCloseNotesModal} style={{ backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer', marginRight: '10px' }}>Cancel</button>
+                                <button type="button" className="btn btn-primary" onClick={handleSaveAdminNotes} disabled={loading} style={{ backgroundColor: '#0d6efd', color: '#fff', border: 'none', borderRadius: '5px', padding: '8px 15px', cursor: 'pointer', opacity: loading ? '0.65' : '1' }}>Save Notes</button>
                             </div>
                         </div>
                     </div>
