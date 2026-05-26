@@ -42,32 +42,17 @@ MongoDB
 Authentication
 JSON Web Token (JWT)
 
-## Home Page
-[Home Page](./screenshots/Landing%20Page.png)
-
-## Admin Dashboard
-[Admin Dashboard](./screenshots/Admin%20Dashboard.png)
-
-## Emergency Reporting
-[Emergency Reporting](./screenshots/Emergency%20Reporting.png)
-
-## Reports Oversight
-[Reports oversight](./screenshots/Reports%20Oversight.png)
-
-## Resource Request Oversight
-[Resource Request Oversight](./screenshots/Resource%20Request%20Oversight.png)
-
-## Task Assignment
-[Task Assignment](./screenshots/Task%20Assignment.png)
-
-## User Dashboard
-[User Dashboard](./screenshots/User%20Dashboard.png)
-
-## User Management
-[User Management](./screenshots/User%20Management.png)
-
-## Map
-[Map](./screenshots/Real-Time%20Map.png)
+<p align="center">
+<img src="./screenshots/Landing Page.png">
+<img src="./screenshots/Admin Dashboard.png">
+<img src="./screenshots/Emergency Reporting.png">
+<img src="./screenshots/Reports Oversight.png">
+<img src="./screenshots/Resource Request Oversight.png">
+<img src="./screenshots/Task Assignment.png">
+<img src="./screenshots/User Dashboard.png">
+<img src="./screenshots/Resource Request.png">
+<img src="./screenshots/User Management.png">
+<img src="./screenshots/Real-Time Map.png">
 🧠 System Workflow
 User reports a disaster incident
 Incident location gets marked on the map
