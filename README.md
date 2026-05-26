@@ -53,6 +53,7 @@ JSON Web Token (JWT)
 <img src="./screenshots/Resource Request.png">
 <img src="./screenshots/User Management.png">
 <img src="./screenshots/Real-Time Map.png">
+
 🧠 System Workflow
 User reports a disaster incident
 Incident location gets marked on the map
